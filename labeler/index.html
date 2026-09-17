@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pitch Intent Labeler</title>
+  <link rel="stylesheet" href="/labeler/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>Pitch Intent Labeler</h1>
+      <p id="statusText">Loading</p>
+    </div>
+    <nav class="top-actions" aria-label="Project views">
+      <a href="/" class="nav-link active">Labeler</a>
+      <a href="/dashboard/" class="nav-link">Dashboard</a>
+      <a href="/frame-review/" class="nav-link">Frame Review</a>
+      <a href="/target-audit/" class="nav-link">Target Audit</a>
+      <a href="/intent-audit/" class="nav-link">Intent Audit</a>
+    </nav>
+    <div class="toolbar">
+      <label class="field compact">
+        <span>Dataset</span>
+        <select id="datasetSelect"></select>
+      </label>
+      <button id="prevButton" type="button" class="ghost">Prev</button>
+      <button id="nextButton" type="button" class="ghost">Next</button>
+      <button id="saveButton" type="button">Save</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="pitch-list-shell">
+      <div class="list-header">
+        <strong>Pitches</strong>
+        <span id="progressText">0/0</span>
+      </div>
+      <div id="pitchList" class="pitch-list"></div>
+    </aside>
+
+    <section class="video-panel">
+      <video id="pitchVideo" controls preload="metadata"></video>
+      <div class="metadata-grid">
+        <div><span>Pitch</span><strong id="metaPitch">-</strong></div>
+        <div><span>Count</span><strong id="metaCount">-</strong></div>
+        <div><span>Result</span><strong id="metaResult">-</strong></div>
+        <div><span>Plate X/Y</span><strong id="metaActual">-</strong></div>
+        <div><span>Game</span><strong id="metaGame">-</strong></div>
+        <div><span>IDs</span><strong id="metaIds">-</strong></div>
+      </div>
+      <a id="savantLink" class="savant-link" href="#" target="_blank" rel="noreferrer">Open Savant video</a>
+    </section>
+
+    <section class="label-panel">
+      <div class="grid-head">
+        <div>
+          <strong>Target Grid</strong>
+          <span id="coordReadout">x -, y -</span>
+        </div>
+        <button id="clearTargetButton" type="button" class="ghost">Clear</button>
+      </div>
+      <canvas id="targetCanvas" width="620" height="520"></canvas>
+
+      <div class="control-row">
+        <label class="field">
+          <span>X</span>
+          <input id="targetXInput" type="number" step="0.01" inputmode="decimal">
+        </label>
+        <label class="field">
+          <span>Y</span>
+          <input id="targetYInput" type="number" step="0.01" inputmode="decimal">
+        </label>
+      </div>
+
+      <div class="button-group" aria-label="Confidence">
+        <span>Confidence</span>
+        <button type="button" data-confidence="1">1</button>
+        <button type="button" data-confidence="2">2</button>
+        <button type="button" data-confidence="3">3</button>
+        <button type="button" data-confidence="4">4</button>
+        <button type="button" data-confidence="5">5</button>
+      </div>
+
+      <div class="button-group" aria-label="Visibility">
+        <span>Visibility</span>
+        <button type="button" data-visible="yes">Yes</button>
+        <button type="button" data-visible="partial">Partial</button>
+        <button type="button" data-visible="no">No</button>
+      </div>
+
+      <label class="field notes-field">
+        <span>Notes</span>
+        <textarea id="notesInput" rows="4"></textarea>
+      </label>
+    </section>
+  </main>
+
+  <script src="/labeler/app.js"></script>
+</body>
+</html>

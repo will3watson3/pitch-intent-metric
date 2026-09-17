@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pitch Intent Dashboard</title>
+  <link rel="stylesheet" href="/dashboard/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="title-block">
+      <h1>Pitch Intent Command Lab</h1>
+      <p id="datasetMeta">Loading</p>
+    </div>
+    <nav class="top-actions" aria-label="Project views">
+      <a href="/" class="nav-link">Labeler</a>
+      <a href="/dashboard/" class="nav-link active">Dashboard</a>
+      <a href="/frame-review/" class="nav-link">Frame Review</a>
+      <a href="/target-audit/" class="nav-link">Target Audit</a>
+      <a href="/intent-audit/" class="nav-link">Intent Audit</a>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="toolbar-panel" aria-label="Filters">
+      <label class="field">
+        <span>Pitcher</span>
+        <select id="pitcherFilter"></select>
+      </label>
+      <label class="field">
+        <span>Pitch Type</span>
+        <select id="pitchTypeFilter"></select>
+      </label>
+      <label class="field">
+        <span>Family</span>
+        <select id="familyFilter"></select>
+      </label>
+      <label class="field">
+        <span>Plot Target</span>
+        <select id="targetModeSelect">
+          <option value="both">Setup + Intent</option>
+          <option value="setup">Setup Only</option>
+          <option value="intent">Intent Only</option>
+        </select>
+      </label>
+      <label class="field search-field">
+        <span>Search</span>
+        <input id="searchInput" type="search" placeholder="Pitch ID, result, intent, note">
+      </label>
+      <label class="field compact-field">
+        <span>Sort</span>
+        <select id="sortSelect">
+          <option value="setup_desc">Setup Miss Desc</option>
+          <option value="setup_asc">Setup Miss Asc</option>
+          <option value="intent_desc">Intent Adj Desc</option>
+          <option value="intent_asc">Intent Adj Asc</option>
+          <option value="date_desc">Date Desc</option>
+          <option value="pitcher">Pitcher</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="kpi-strip" id="kpiStrip" aria-label="Summary metrics"></section>
+
+    <section class="leaderboard-panel panel">
+      <div class="panel-head">
+        <h2>Pitcher Leaderboard</h2>
+        <span>Average setup miss</span>
+      </div>
+      <div class="leaderboard-table" id="leaderboardTable"></div>
+    </section>
+
+    <section class="plot-panel panel">
+      <div class="panel-head">
+        <h2>Target vs Actual</h2>
+        <span>Pitcher POV zone coordinates</span>
+      </div>
+      <div class="plot-grid" id="plotGrid"></div>
+    </section>
+
+    <section class="video-panel panel">
+      <div class="panel-head">
+        <h2>Pitch Review</h2>
+        <span id="selectedPitchTitle">No pitch selected</span>
+      </div>
+      <video id="pitchVideo" controls preload="metadata"></video>
+      <div class="selected-layout">
+        <canvas id="selectedCanvas" width="360" height="260" aria-label="Selected pitch target plot"></canvas>
+        <div class="selected-meta" id="selectedMeta"></div>
+      </div>
+      <a id="savantLink" class="savant-link" href="#" target="_blank" rel="noreferrer">Open Savant</a>
+    </section>
+
+    <section class="split-panel panel">
+      <div class="panel-head">
+        <h2>Pitch-Type Inflation</h2>
+        <span>Setup miss by filtered sample</span>
+      </div>
+      <div id="splitTable" class="split-table"></div>
+    </section>
+
+    <section class="diagnostics-panel panel">
+      <div class="panel-head">
+        <h2>Model Diagnostics</h2>
+        <span>Pitcher + pitch type</span>
+      </div>
+      <div id="diagnosticsTable" class="diagnostics-table"></div>
+    </section>
+
+    <section class="outlier-panel panel">
+      <div class="panel-head">
+        <h2>Adjustment Outliers</h2>
+        <span>Largest setup vs intent changes</span>
+      </div>
+      <div id="outlierTable" class="outlier-table"></div>
+    </section>
+
+    <section class="table-panel panel">
+      <div class="panel-head">
+        <h2>Pitch Table</h2>
+        <span id="tableCount">0 pitches</span>
+      </div>
+      <div class="pitch-table-shell">
+        <table class="pitch-table">
+          <thead>
+            <tr>
+              <th>Pitch</th>
+              <th>Pitcher</th>
+              <th>Type</th>
+              <th>Family</th>
+              <th>Intent</th>
+              <th>Count</th>
+              <th>Result</th>
+              <th>Setup</th>
+              <th>Inferred</th>
+              <th>Actual</th>
+              <th>Setup Ft</th>
+              <th>Adj Ft</th>
+              <th>Conf</th>
+              <th>Group</th>
+              <th>Visible</th>
+            </tr>
+          </thead>
+          <tbody id="pitchTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/dashboard/app.js"></script>
+</body>
+</html>
