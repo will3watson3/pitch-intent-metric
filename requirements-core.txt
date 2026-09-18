@@ -1,5 +1,0 @@
-# Offline demo and synthetic regression tests. Tested locally with Python 3.9.
-numpy==1.26.4
-pandas==2.3.3
-opencv-contrib-python==4.11.0.86
-Pillow==11.3.0

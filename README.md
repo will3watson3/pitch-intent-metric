@@ -1,66 +1,49 @@
 # Pitch Intent Metric
 
-**Estimating where a pitcher meant to throw, starting with the catcher's glove target.**
+**Estimating a plausible finish location for breaking and offspeed pitches from the catcher's glove target and a pitcher's history.**
 
-Pitch location alone cannot distinguish a missed target from an intentional chase pitch. This research project connects pitch-level Statcast data to broadcast video, identifies the catcher's setup, supports manual review, and estimates a plausible finish location for breaking and offspeed pitches using earlier comparable pitches.
+Pitch location alone cannot distinguish a missed target from an intentional chase pitch. This project studies whether earlier pitches with similar catcher setups, counts, and movement profiles can help estimate where a pitch was meant to finish.
 
-Built with Python, pandas, NumPy, OpenCV, and plain JavaScript. The project includes data ingestion, computer vision, human review tools, temporal inference, and regression tests.
+This repository contains the statistical core of a larger local video-analysis project: validated Statcast joins, historical-comparable inference, a runnable example, and regression tests. Built with Python, pandas, and NumPy.
 
-**Status:** working local research pipeline and audit tools; intent estimates remain provisional. The current model uses weighted historical comparables. Independent true-intent labels are not available, and the full model has not outperformed the average-offset baseline in the small pilot.
+## Try it
 
-## How it works
-
-```mermaid
-flowchart LR
-    A[Pitch-level Statcast] --> B[Match video by pitch ID]
-    B --> C[Extract delivery frames]
-    C --> D[Glove detection and zone geometry]
-    D --> E[Review setup frame and target]
-    E --> F[Earlier-game comparable pitches]
-    F --> G[Provisional finish area]
-    G --> H[Compare models and review video]
-```
-
-- **Reliable joins:** stable pitch identifiers and one-to-one checks connect labels, video frames, and Statcast rows.
-- **Frame-specific geometry:** overlays use the selected frame's zone, preserve manual corrections, and test all four edges.
-- **Reviewable predictions:** browser tools display glove targets, model variants, actual locations, and video together.
-- **Leakage controls:** inference excludes the current game's and future pitches' movement, locations, and outcomes.
-- **Explicit abstention:** inadequate history or weak comparable support produces no estimate.
-
-## Try the offline demo
-
-From the repository root, use Python 3.9–3.11. The local development environment uses Python 3.9; GitHub Actions is configured for 3.11.
+Use Python 3.9–3.11 and run from the repository root:
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements-core.txt
-python examples/synthetic_demo.py
+python -m pip install -r requirements.txt
+python scripts/demo.py
+python -m unittest discover -s scripts/tests -p test_intent_synthetic.py -v
 ```
 
-The demo runs the actual inference code for all three model variants using invented pitches. It prints the glove target, estimated finish, comparable IDs and weights, support counts, and empirical bounds as JSON. No credentials, videos, or private data are required. Synthetic output demonstrates behavior, not predictive accuracy.
+The demo uses invented pitches and runs all three inference variants. It prints estimated locations, historical support, comparable weights, and empirical bounds as JSON. It needs no credentials or downloaded data. Synthetic output demonstrates software behavior, not predictive accuracy.
 
-## Review tools
+## How it works
 
-With your own local data, start the shared server:
+1. Validate pitch IDs and join reviewed glove targets to pitch-level Statcast records.
+2. Find earlier-game pitches from the same pitcher and pitch type against the same batter side, near the reviewed target.
+3. Weight comparables by target proximity, count, historical movement profile, and outcome.
+4. Transfer a supported historical target-to-finish offset to the new glove target.
+5. Abstain when history or effective support is insufficient.
 
-```sh
-python scripts/labeler_server.py --port 8765
-```
+The current pitch's realized movement, endpoint, and outcome are excluded from inference. The estimator uses weighted comparables; all estimates remain provisional. [Model features, data requirements, and evaluation details](MODEL.md).
 
-| Page | Purpose |
+## What's in the code
+
+| File | Purpose |
 | --- | --- |
-| [Labeler](http://127.0.0.1:8765/) | Label catcher setup targets |
-| [Dashboard](http://127.0.0.1:8765/dashboard/) | Explore pitch and target summaries |
-| [Frame review](http://127.0.0.1:8765/frame-review/) | Inspect frames and correct zone geometry |
-| [Target audit](http://127.0.0.1:8765/target-audit/) | Confirm or correct the selected glove target |
-| [Intent audit](http://127.0.0.1:8765/intent-audit/) | Compare inferred targets, actual location, and video |
+| [`scripts/run_intent_pilot.py`](scripts/run_intent_pilot.py) | Inference, model variants, baselines, and temporal evaluation |
+| [`scripts/build_webb_sweeper_intent_pilot.py`](scripts/build_webb_sweeper_intent_pilot.py) | Validated joins for the Webb, Cease, and Skubal pilot groups |
+| [`scripts/demo.py`](scripts/demo.py) | Small, reproducible synthetic example and input schema |
+| [`scripts/tests/test_intent_synthetic.py`](scripts/tests/test_intent_synthetic.py) | Leakage, abstention, coordinate conversion, support, and row-order checks |
 
-These interfaces need local datasets; a new checkout has no real pitches to display. See [setup and workflows](docs/WORKFLOWS.md) for inputs and commands. The server is a local review tool and binds to loopback by default.
+GitHub Actions runs the tests and demo on Python 3.11. Video processing, browser review tools, datasets, and experiments remain in the local research workspace and are outside this focused release.
 
 ## Current evidence
 
-The audited pilot contains **59 accepted pitches**: 22 Dylan Cease sliders, 21 Logan Webb sweepers, and 16 Tarik Skubal changeups. The full model produced 30 estimates. On the **29 pitches shared by every variant**, mean endpoint errors were:
+The reviewed pilot contains **59 accepted pitches**: 22 Cease sliders, 21 Webb sweepers, and 16 Skubal changeups. The full model produced 30 estimates. On the **29 pitches shared by every variant**, mean endpoint errors were:
 
 | Method | Mean endpoint error, feet |
 | --- | ---: |
@@ -70,25 +53,6 @@ The audited pilot contains **59 accepted pitches**: 22 Dylan Cease sliders, 21 L
 | Full weighted comparables | 1.111 |
 | Glove target baseline | 1.127 |
 
-Endpoint error measures where the pitch finished, **not whether intended location was recovered**. Empirical bounds covered only 34.5% of observed endpoints in this shared sample. These bounds are not calibrated confidence regions, and the exploratory comparison does not establish a validated best model. See the [model and evaluation notes](docs/MODEL.md).
+The full model did not outperform the average-offset baseline. Empirical bounds covered only 34.5% of observed endpoints in this sample. Endpoint prediction is not proof of recovered intent, and independent true-intent labels are unavailable. This remains a research pilot, with limitations and next steps documented in [MODEL.md](MODEL.md).
 
-## Tests
-
-```sh
-python -m unittest discover -s scripts/tests -p 'test_*.py' -v
-node scripts/tests/test_frame_overlay.js
-```
-
-The published Python tests use synthetic inputs or mocks: no network calls, API keys, or private fixtures. They exercise inference leakage, abstention, coordinate conversion, zone fitting, and frame-specific overlays. Node.js is only needed for the JavaScript check. [Testing details](docs/TESTING.md).
-
-## Repository guide
-
-| Folder | Contents |
-| --- | --- |
-| [`scripts/`](scripts/README.md) | Pipeline, model, review server, and tests |
-| [`examples/`](examples/README.md) | Runnable synthetic inference demo |
-| `labeler/`, `dashboard/`, `frame-review/`, `target-audit/`, `intent-audit/` | Browser interfaces, each with its own README |
-| [`docs/`](docs/README.md) | Workflows, model features, data contracts, and testing |
-| `data/`, `reports/`, `models/` | Local inputs and generated artifacts; only directory documentation is published |
-
-Raw broadcast footage, downloaded datasets, manual audit records, credentials, model binaries, historical experiment scripts, and the separate ScoutDeck website are excluded from this repository. Existing local research files retain their original paths. See [publication scope](docs/PUBLICATION.md).
+The empirical snapshot comes from local reviewed data; the public synthetic example cannot reproduce those results.

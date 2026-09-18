@@ -11,15 +11,6 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: python -m pip install -r requirements-core.txt
-      - run: python -m unittest discover -s scripts/tests -p 'test_*.py' -v
-      - run: python examples/synthetic_demo.py
-      - run: node scripts/tests/test_frame_overlay.js
-      - name: Check all review interfaces compile
-        run: |
-          for file in labeler/app.js dashboard/app.js frame-review/app.js target-audit/app.js intent-audit/app.js; do
-            node --check "$file"
-          done
+      - run: python -m pip install -r requirements.txt
+      - run: python -m unittest discover -s scripts/tests -p test_intent_synthetic.py -v
+      - run: python scripts/demo.py

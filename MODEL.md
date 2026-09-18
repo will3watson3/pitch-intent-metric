@@ -1,6 +1,6 @@
 # Breaking and offspeed intent pilot
 
-Implementation: [`scripts/run_intent_pilot.py`](../scripts/run_intent_pilot.py), especially `infer(query, audited, history)`.
+Implementation: [`scripts/run_intent_pilot.py`](scripts/run_intent_pilot.py), especially `infer(query, audited, history)`.
 
 The working hypothesis is that a pitcher's historical finishes near a similar catcher setup provide evidence about the intended finish area. This implementation is a transparent weighted-comparables estimator, not a trained random forest or a supervised true-intent model.
 
@@ -52,3 +52,50 @@ The locally generated `reports/intent_pilot/summary.json` and `benchmark.csv` su
 The sample is small and selected from reviewed video. Glove placement, framing timing, broadcast geometry, and coordinate conversion introduce measurement error. The full model did not beat the simple average-offset baseline. Removing outcome weights improved endpoint error in this exploratory sample, but that result needs an independent holdout before model selection.
 
 No independent true-intent labels exist here. Lower endpoint error alone cannot validate recovered intent or support command grading. Next useful work is independent review of inferred areas, additional earlier-game labels, and a separately held-out evaluation with coverage calibration.
+
+## Data and reproduction
+
+### Pitch identity
+
+Use one row per pitch. `pitch_uid` is the string `game_pk_at_bat_number_pitch_number`; MLB `play_id` connects a pitch to its video. Aggregated pitcher or pitch-type tables cannot support these joins.
+
+The intent merge rejects duplicate pitch IDs and frame IDs, incomplete group coverage, missing Statcast rows, missing frames, and frames belonging to another pitch. Never join video by row order.
+
+### Frame and coordinate identity
+
+`frame_uid` identifies a specific extracted image and belongs to exactly one `pitch_uid`. A manifest records frame time and image path. Zone center/width/height and glove center are image-pixel quantities belonging to that frame. An overlay from another frame can be wrong even within the same pitch.
+
+Normalized targets use the pitcher/broadcast view: x increases left to right; y increases bottom to top. Zone edges are 0 and 1. Chase targets may lie outside that range and must not be clamped.
+
+```text
+x_01 = (glove_x - zone_left) / zone_width
+y_01 = (zone_bottom - glove_y) / zone_height
+plate_x_ft = (0.5 - x_01) * (17 / 12)
+plate_z_ft = sz_bot + y_01 * (sz_top - sz_bot)
+```
+
+The horizontal flip aligns these target coordinates with Statcast's catcher-view `plate_x`. The conversion approximates the broadcast box as a 17-inch plate width and the batter-specific strike-zone height; it is not full camera calibration.
+
+### Inputs for the audited intent pilot
+
+| Local file | Role |
+| --- | --- |
+| `data/target_audit_labels.csv` | Reviewed frame, original and corrected target, status, notes |
+| `data/labeled_target_analysis_sample_400.csv` | Pitch labels, pitcher metadata, video links |
+| `data/setup_frame_manifest_31_1200_2700.csv` | Frame-to-pitch mapping, extraction time, image path, status |
+| `data/{webb,cease,skubal}_2025_pitch_level.csv` | Pitch-level Statcast history with stable IDs |
+
+The merge script creates `{webb_sweeper,cease_slider,skubal_changeup}_intent_pilot_model_ready.csv`. `confirmed` and `corrected` audits are accepted; `needs_review` and `unusable` are excluded. Accepted records must have finite target, endpoint, strike-zone, movement, speed, and spin fields. Original audit coordinates are retained separately.
+
+The inference function's minimum in-memory schema is demonstrated directly in [`scripts/demo.py`](scripts/demo.py). Dates must be consistently formatted ISO `YYYY-MM-DD`; count and measurement columns must be numeric. Callers should validate incoming data before calling `infer`.
+
+With the local audited inputs listed above, run from the repository root:
+
+```sh
+python scripts/build_webb_sweeper_intent_pilot.py --group webb
+python scripts/build_webb_sweeper_intent_pilot.py --group cease
+python scripts/build_webb_sweeper_intent_pilot.py --group skubal
+python scripts/run_intent_pilot.py
+```
+
+These dataset-specific commands write merged tables under `data/`, then `data/audited_intent_pilot_predictions.csv` and evaluation artifacts under `reports/intent_pilot/`. Real inputs are not bundled. Use `python scripts/demo.py` for an entirely offline example.
